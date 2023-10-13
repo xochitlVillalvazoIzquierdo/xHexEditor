@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Xochitl Villalvazo">
+    <meta name="description" content="A lightweight hexadecimal editor">
+    <title>xHex Editor</title>
+    <link rel="icon" type="image/png" href="assets/icon.png">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+</head>
+<body data-bs-theme="dark">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-4">
+                <h2>Text view:</h2>
+                <textarea id="textArea_textView" class="form-control" rows="30"></textarea>
+            </div>
+            <div class="col-md-4">
+                <h2>Hex view:</h2>
+                <textarea id="textArea_hexView" class="form-control" rows="30"></textarea>
+            </div>
+            <div class="col-md-4">
+                <h2>File info:</h2>
+                <!--TODO-->
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-8">
+                <input type="file" id="input_fileInput" class="form-control" accept=".*">
+            </div>
+            <div class="col-md-2">
+                <button id="button_dump" class="btn btn-primary" style="width: 100%;">Dump</button>
+            </div>
+            <div class="col-md-2">
+                <button id="button_download" class="btn btn-success" style="width: 100%;">Download</button>
+            </div>
+        </div>
+        <dive class="row mt-3">
+            <div class="col">
+                <input type="text" id="button_saveAs" class="form-control" placeholder="Save As (e.g., modified_file.txt)">
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    <script>
+        // Element references
+        var textArea_textView = document.getElementById('textArea_textView');
+        var textArea_hexView = document.getElementById('textArea_hexView');
+        var button_saveAs = document.getElementById('button_saveAs');
+        var input_fileInput = document.getElementById('input_fileInput');
+        var button_dump = document.getElementById('button_dump');
+        var button_download = document.getElementById('button_download');
+
+        // Functions
+        function updateHexPanel() {
+            var textValue = textArea_textView.value;
+            var hexValue = textValue.split('').map(char => char.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+            textArea_hexView.value = hexValue;
+        }
+        function updateTextPanel() {
+            var hexValue = textArea_hexView.value.replace(/\s+/g, '');
+            var textValue = hexValue.match(/.{1,2}/g).map(hex => String.fromCharCode(parseInt(hex, 16))).join('');
+            textArea_textView.value = textValue;
+        }
+        function dumpInputFile() {
+            var file = input_fileInput.files[0];
+
+            if (file) {
+                var reader = new FileReader();
+
+                reader.onload = function (e) {
+                    var arrayBuffer = e.target.result;
+                    var uint8Array = new Uint8Array(arrayBuffer);
+
+                    // Display hex view
+                    textArea_hexView.value = Array.from(uint8Array, byte => byte.toString(16).padStart(2, '0')).join(' ');
+                    // Display text view
+                    textArea_textView.value = String.fromCharCode.apply(null, uint8Array);
+                    // Display default download file name
+                    button_saveAs.value = button_saveAs.value = `modified_${file.name}`;
+                };
+
+                reader.readAsArrayBuffer(file);
+            }
+        }
+        function downloadFile() {
+            var textValue = textArea_textView.value;
+            var uint8Array = new Uint8Array(textValue.length);
+
+            for (let i = 0; i < textValue.length; i++) {
+                uint8Array[i] = textValue.charCodeAt(i);
+            }
+
+            var blob = new Blob([uint8Array]);
+            var url = URL.createObjectURL(blob);
+
+            // Get the user-specified filename and trim all spaces
+            var fileName = button_saveAs.value.trim();
+
+            if (fileName === '') {
+                // Default name if none provided
+                fileName = `modified_${input_fileInput.files[0].name}`;
+            }
+
+            var a_elem = document.createElement('a');
+            a_elem.href = url;
+            a_elem.download = fileName;
+            document.body.appendChild(a_elem);
+            a_elem.click();
+            URL.revokeObjectURL(a_elem);
+        }
+        function getInfo() {
+            //Something something
+        }
+
+        // Adding event listeners
+        textArea_textView.addEventListener('input', updateHexPanel);
+        textArea_hexView.addEventListener('input', updateTextPanel);
+        button_dump.addEventListener('click', dumpInputFile);
+        button_download.addEventListener('click', downloadFile);
+    </script>
+</body>
+</html>
